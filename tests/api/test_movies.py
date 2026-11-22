@@ -42,11 +42,15 @@ def test_update_movie(authenticated_api_manager, created_movie):
     movie_id = created_movie["id"]
     update_data = DataGenerator.generate_movie_data()
 
-    response = authenticated_api_manager.movies_api.update_movie(
+    authenticated_api_manager.movies_api.update_movie(
         movie_id,
         update_data,
     )
-    response_data = response.json()
+
+    get_response = authenticated_api_manager.movies_api.get_movie_by_id(
+        movie_id
+    )
+    response_data = get_response.json()
 
     assert response_data["id"] == movie_id
     assert response_data["name"] == update_data["name"]
@@ -60,12 +64,19 @@ def test_delete_movie(authenticated_api_manager, movie_data):
     created_movie = create_response.json()
     movie_id = created_movie["id"]
 
-    response = authenticated_api_manager.movies_api.delete_movie(movie_id)
-    response_data = response.json()
+    delete_response = authenticated_api_manager.movies_api.delete_movie(
+        movie_id
+    )
+    delete_data = delete_response.json()
 
-    assert response_data["id"] == movie_id
-    assert response_data["name"] == movie_data["name"]
-    assert response_data["price"] == movie_data["price"]
+    get_response = authenticated_api_manager.movies_api.get_movie_by_id(
+        movie_id,
+        expected_status=404,
+    )
+
+    assert delete_data["id"] == movie_id
+    assert delete_data["name"] == movie_data["name"]
+    assert get_response.status_code == 404
 
 
 def test_filter_movies_by_location(api_manager):
@@ -77,7 +88,7 @@ def test_filter_movies_by_location(api_manager):
     response_data = response.json()
 
     assert isinstance(response_data["movies"], list)
-    assert isinstance(response_data["count"], int)
+    assert len(response_data["movies"]) > 0
     assert all(
         movie["location"] == location
         for movie in response_data["movies"]
